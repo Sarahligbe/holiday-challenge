@@ -1,0 +1,92 @@
+---
+# Ansible does not have a module to request a public certificate from aws certificate manager, hence the use of the cli
+
+  - name: Request a public certificate
+    shell: |
+      aws acm request-certificate \
+      --domain-name "{{ domain }}" \
+      --validation-method DNS \
+      --region "{{ aws_region }}" \
+      --domain-validation-options DomainName={{ domain }},ValidationDomain={{ domain }} \
+      --idempotency-token prevail
+    register: new_acm
+    tags:
+      - route53
+      - ssl
+
+# Create a CNAME record while the certificate is still pending validation
+
+  - name: Get the Certificate ARN
+    set_fact:
+      certificate_arn: '{{ (new_acm.stdout|from_json).CertificateArn }}'
+
+  - name: Retrieve information about the requested certificate
+    shell: |
+      aws acm describe-certificate --certificate-arn '{{ certificate_arn }}' --region '{{ aws_region }}'
+    register: certificate_details
+    retries: 13
+    delay: 10
+    until: (certificate_details.stdout|from_json).Certificate.DomainValidationOptions[0].ResourceRecord.Name is defined
+    tags: ssl
+
+  - name: Create DNS(CNAME) record in route53
+    community.aws.route53:
+      state: present
+      ttl: 120
+      zone: '{{ (certificate_details.stdout|from_json).Certificate.DomainValidationOptions[0].ValidationDomain }}'
+      record: '{{ (certificate_details.stdout|from_json).Certificate.DomainValidationOptions[0].ResourceRecord.Name }}'
+      type: '{{ (certificate_details.stdout|from_json).Certificate.DomainValidationOptions[0].ResourceRecord.Type }}'
+      value: '{{ (certificate_details.stdout|from_json).Certificate.DomainValidationOptions[0].ResourceRecord.Value }}'
+      wait: yes
+    tags: ssls
+
+  - name: Wait for the certificate's status to become ISSUED
+    shell: |
+      aws acm describe-certificate --certificate-arn '{{ certificate_arn }}' --region '{{ aws_region }}'
+    register: certificate_details
+    retries: 85
+    delay: 20
+    until: (certificate_details.stdout|from_json).Certificate.Status == "ISSUED"
+    tags: ssl
+
+# Update the application load balancer with https listeners and add a rule that redirects http
+
+  - name: Update the ALB to redirect http traffic to https
+    community.aws.elb_application_lb:
+      name: '{{ alb_name }}'
+      region: '{{ aws_region }}'
+      security_groups: '{{ alb_group_id }}'
+      subnets:
+        - '{{ pub_01_subnet_id }}'
+        - '{{ pub_02_subnet_id }}'
+      listeners:
+        - Protocol: HTTPS
+          Port: 443
+          SslPolicy: ELBSecurityPolicy-2016-08
+          DefaultActions:
+            - Type: forward
+              TargetGroupName: '{{ tg_name }}'
+          Certificates:
+            - CertificateArn: '{{ certificate_arn }}'
+        - Protocol: HTTP
+          Port: 80
+          DefaultActions:
+            - Type: forward
+              TargetGroupName: '{{ tg_name }}'
+          Rules:
+            - Conditions:
+                - Field: path-pattern
+                  Values: 
+                    - "/*"
+              Priority: '1'
+              Actions:
+                - Type: redirect
+                  RedirectConfig:
+                    Protocol: "HTTPS"
+                    Port: "443"
+                    Host: "#{host}"
+                    Path: "/#{path}"
+                    Query: "#{query}"
+                    StatusCode: "HTTP_301"
+
+

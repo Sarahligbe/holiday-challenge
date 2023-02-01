@@ -1,0 +1,47 @@
+---
+
+# VPC variables
+
+vpc_name: "assignment-VPC"
+vpc_cidr: "172.20.0.0/16"
+aws_region: "us-east-1"
+az_01: "us-east-1a"
+az_02: "us-east-1b"
+pub_cidr_01: "172.20.1.0/24"
+pub_cidr_02: "172.20.2.0/24"
+priv_cidr_01: "172.20.3.0/24"
+priv_cidr_02: "172.20.4.0/24"
+pub_subnet_name_01: "Assignment-pub-01"
+pub_subnet_name_02: "Assignment-pub-02"
+priv_subnet_name_01: "Assignment-priv-01"
+priv_subnet_name_02: "Assignment-priv-02"
+igw_name: "Assignment-IGW"
+igw_rt_name: "Assignment-IGW-RT"
+nat_name: "Assignment-NAT"
+nat_rt_name: "Assignment-NAT-RT"
+alb_sg: "ALB-SG"
+instances_sg: "Instance-SG"
+
+# Autoscaling group variables
+
+lt_name: "Assignment-LT"
+lt_key_name: "exam"
+lt_instance_type: "t2.micro"
+lt_image_id: "ami-0b93ce03dcbcb10f6" #ubuntu20.04 
+asg_name: "Assignment-ASG"
+
+# Application load balancer variables
+
+tg_name: "Assignment-TG"
+alb_name: "Assignment-ALB"
+
+# Route53 variable
+
+domain: "sarahligbe.live"
+
+
+# User data variables
+
+nginx_display_directory: /var/www/assignment
+nginx_source_file: /etc/nginx/sites-available/assignment.conf
+nginx_dest_file: /etc/nginx/sites-enabled

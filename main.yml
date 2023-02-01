@@ -1,0 +1,18 @@
+---
+
+- name: Provisioning AWS resources using Ansible
+  hosts: localhost
+  connection: local
+  gather_facts: False
+
+  roles:
+    - name: Create a logical network
+      role: provision_vpc
+    - name: Create an autoscaling group
+      role: autoscaling
+    - name: Create an application load balancer
+      role: load_balancer
+    - name: Link the load balancer to route53
+      role: route53
+    - name: Create a certificate manager, add it to the load balancer and update load balancer rules
+      role: ssl

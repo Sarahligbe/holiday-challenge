@@ -1,0 +1,18 @@
+---
+# Create a route table for the internet gateway and associates the public subnets
+
+  - name: Create IGW route table and associate the public subnets
+    amazon.aws.ec2_vpc_route_table:
+      vpc_id: '{{ vpc_id }}'
+      region: '{{ aws_region }}'
+      subnets:
+        - '{{ pub_01_subnet_id }}'
+        - '{{ pub_02_subnet_id }}'
+      routes:
+        - dest: 0.0.0.0/0
+          gateway_id: "{{ igw_gateway_id }}"
+      resource_tags:
+        Name: '{{ igw_rt_name }}'
+    register: IGW_RT
+    tags: IGW_RT
+

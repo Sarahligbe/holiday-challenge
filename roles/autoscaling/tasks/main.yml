@@ -1,0 +1,4 @@
+---
+
+- include_tasks: launch_template.yml
+- include_tasks: asg.yml

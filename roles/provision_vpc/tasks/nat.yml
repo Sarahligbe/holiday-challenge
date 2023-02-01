@@ -1,0 +1,18 @@
+---
+# Create NAT gateway and allocate an elastic ip
+
+  - name: Create a NAT gateway and allocate an elastic IP
+    amazon.aws.ec2_vpc_nat_gateway:
+      state: present
+      subnet_id: '{{ pub_01_subnet_id }}'
+      if_exist_do_not_create: true
+      wait: yes
+      region: '{{ aws_region }}'
+    register: nat_gateway
+    tags: nat
+
+# making it cacheable in order to use it in the delete playbook
+  - name: store nat gateway id
+    set_fact:
+      nat_gate_id: '{{ nat_gateway.nat_gateway_id }}'
+      cacheable: yes

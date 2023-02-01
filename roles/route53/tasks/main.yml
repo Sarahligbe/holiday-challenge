@@ -1,0 +1,45 @@
+---
+
+# Create a route53 hosted zone and an A record for the application load balancer
+
+  - name: Create route53 hosted zone
+    community.aws.route53_zone:
+      zone: '{{ domain }}'
+    register: hosted_zone_name
+    tags: route53
+
+  - name: Create an alias record that points to the ALB
+    community.aws.route53:
+      state: present
+      hosted_zone_id: '{{ hosted_zone_name.zone_id }}'
+      record: '{{ domain }}'
+      type: A
+      overwrite: true
+      value: '{{ alb_dns }}'
+      alias: True
+      alias_hosted_zone_id: '{{ alb_hosted_zone_id }}'
+    register: route53_info
+    tags: route53
+
+  - name: get nameservers
+    community.aws.route53:
+      zone: '{{ domain }}'
+      record: '{{ domain }}'
+      type: A
+      state: get
+    register: nameserver
+    tags: route53
+
+  - name: store the credentials 
+    set_fact:
+      nameservers_1: '{{ nameserver.nameservers }}'
+      ttl_1: '{{ nameserver.set.ttl }}'
+      type_1: '{{ nameserver.set.type }}'
+      value_1: '{{ nameserver.set.value }}'
+      cacheable: yes
+
+  - name: display nameservers
+    debug:
+      msg: "Here are your nameservers: {{ nameservers_1 }}"
+    tags: route53
+

@@ -1,0 +1,18 @@
+---
+# Creates a NAT route table and associates the private subnets
+
+  - name: Create NAT route table
+    amazon.aws.ec2_vpc_route_table:
+      vpc_id: '{{ vpc_id }}'
+      region: '{{ aws_region }}'
+      subnets:
+        - '{{ priv_01_subnet_id }}'
+        - '{{ priv_02_subnet_id }}'
+      routes:
+        - dest: 0.0.0.0/0
+          gateway_id: "{{ nat_gate_id }}"
+      resource_tags:
+        Name: '{{ nat_rt_name }}'
+    register: NAT_RT
+    tags: NAT_RT
+

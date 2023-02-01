@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# script to install nginx using user data
+
+apt update -y
+apt install nginx php7.4 php7.4-fpm -y
+systemctl start nginx
+mkdir -p {{ nginx_display_directory }}
+
+echo "<?php echo 'Hello world!! This is '; echo gethostname(); ?>" | tee {{ nginx_display_directory }}/index.php
+
+printf "server {\n
+       listen 80 default_server;\n
+       listen [::]:80 default_server;\n
+       server_name {{ domain }};\n
+       root {{ nginx_display_directory }};\n
+       index index.php;\n
+       location / {\n
+               try_files \$uri \$uri/ =404;\n
+       }\n
+
+       location ~ \.php$ {\n
+           include snippets/fastcgi-php.conf;\n
+           fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;\n
+      }\n
+
+}" | tee -a {{ nginx_source_file }}
+ln -s {{ nginx_source_file }} {{ nginx_dest_file }}
+rm {{ nginx_dest_file }}/default
+systemctl reload nginx
+

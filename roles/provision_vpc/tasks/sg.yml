@@ -1,0 +1,42 @@
+---
+# Creates security groups for the ec2 instances and the application load balancer
+
+  - name: Load balancer security group
+    amazon.aws.ec2_group:
+      name: '{{ alb_sg }}'
+      description: Security group for the ALB
+      vpc_id: '{{ vpc_id }}'
+      region: '{{ aws_region }}'
+      rules:
+        - proto: tcp
+          ports:
+            - 80
+            - 443
+          cidr_ip: 0.0.0.0/0
+    register: alb_sg
+    tags: SG
+
+  - name: store the alb security group name
+    set_fact: 
+      alb_group_id: '{{ alb_sg.group_id }}'
+      alb_group_name: '{{ alb_sg.group_name }}'
+
+  - name: EC2 security group
+    amazon.aws.ec2_group:
+      name: '{{ instances_sg }}'
+      description: Security group for the instances
+      vpc_id: '{{ vpc_id }}'
+      region: '{{ aws_region }}'
+      rules:
+        - proto: tcp
+          ports:
+            - 80
+            - 443
+          group_name: '{{ alb_group_name }}'
+    register: instance_sg
+    tags: SG
+
+  - name: store the instances security group id
+    set_fact:
+      instance_group_id: '{{ instance_sg.group_id }}'
+

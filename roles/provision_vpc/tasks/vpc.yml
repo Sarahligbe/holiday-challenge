@@ -1,0 +1,21 @@
+---
+
+# Provision the vpc
+
+  - name: Create a VPC
+    amazon.aws.ec2_vpc_net:
+      name: '{{ vpc_name }}'
+      cidr_block: '{{ vpc_cidr }}'
+      region: '{{ aws_region }}'
+      dns_support: true
+      dns_hostnames: true
+      state: present
+    register: new_vpc
+    tags:
+      - vpc
+      - first
+
+  - name: save the vpc id
+    set_fact:
+      vpc_id: '{{ new_vpc.vpc.id }}'
+      cacheable: yes

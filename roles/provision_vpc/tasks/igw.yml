@@ -1,0 +1,16 @@
+---
+# Creates the Internet gateway
+
+  - name: Create an internet gateway
+    amazon.aws.ec2_vpc_igw:
+      vpc_id: '{{ new_vpc.vpc.id }}'
+      region: '{{ aws_region }}'
+      state: present
+      resource_tags:
+        Name: '{{ igw_name }}'
+    tags: igw
+    register: igw
+
+  - name: store the gateway id
+    set_fact: 
+      igw_gateway_id: '{{ igw.gateway_id }}'

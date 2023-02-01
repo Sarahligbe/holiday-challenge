@@ -1,0 +1,38 @@
+---
+# Creates the application load balancer in the public subnets for the two availability zones in the vpc
+
+  - name: Create the load balancer
+    community.aws.elb_application_lb:
+      name: '{{ alb_name }}'
+      security_groups: '{{ alb_group_id }}'
+      subnets:
+        - '{{ pub_01_subnet_id }}'
+        - '{{ pub_02_subnet_id }}'
+      listeners:
+        - Protocol: HTTP
+          Port: 80
+          DefaultActions:
+            - Type: forward
+              TargetGroupName: '{{ tg_group_name }}'
+      state: present
+      region: '{{ aws_region }}'
+      wait: true
+      wait_timeout: 300
+    register: new_alb
+    tags:
+      - SG
+      - alb
+
+  - name: store the alb dns name and hosted zone id
+    set_fact:
+      alb_dns: '{{ new_alb.dns_name }}'
+      alb_hosted_zone_id: '{{ new_alb.canonical_hosted_zone_id }}'
+
+  - name: Add the target group to the autoscaling group
+    community.aws.ec2_asg:
+      name: '{{ asg_name }}'
+      target_group_arns: '{{ tg_group_arn }}'
+      region: '{{ aws_region }}'
+    tags:
+      - SG
+

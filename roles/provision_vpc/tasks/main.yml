@@ -1,0 +1,9 @@
+---
+
+- include_tasks: vpc.yml
+- include_tasks: subnets.yml
+- include_tasks: igw.yml
+- include_tasks: nat.yml
+- include_tasks: igw_rt.yml
+- include_tasks: nat_rt.yml
+- include_tasks: sg.yml

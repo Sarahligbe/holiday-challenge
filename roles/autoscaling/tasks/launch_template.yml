@@ -1,0 +1,20 @@
+---
+# Creates the launch template
+
+  - name: Create the launch template
+    community.aws.ec2_launch_template:
+      name: '{{ lt_name }}'
+      image_id: '{{ lt_image_id }}'
+      key_name: '{{ lt_key_name }}'
+      instance_type: '{{ lt_instance_type }}'
+      security_group_ids: '{{ instance_group_id }}'
+      user_data: "{{ lookup('ansible.builtin.template', 'user-data.sh.j2')| b64encode }}"
+      region: '{{ aws_region }}'
+    register: launch_temp
+    tags: lt
+
+  - name: store the launch template id
+    set_fact:
+      launch_temp_id: '{{ launch_temp.latest_template.launch_template_id }}'
+      cacheable: yes
+

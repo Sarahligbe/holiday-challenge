@@ -1,0 +1,50 @@
+---
+# Creates two public and two private subnets and stores their subnet ids
+
+  - name: Create two public and two private subnets
+    amazon.aws.ec2_vpc_subnet:
+      az: '{{ item.az }}'
+      cidr: '{{ item.cidr }}'
+      vpc_id: '{{ vpc_id }}'
+      region: '{{ aws_region }}'
+      state: present
+      resource_tags:
+        Name: '{{ item.name }}'
+    loop:
+      - { az: '{{ az_01 }}', cidr: '{{ pub_cidr_01 }}', name: '{{ pub_subnet_name_01 }}' }
+      - { az: '{{ az_02 }}', cidr: '{{ pub_cidr_02 }}', name: '{{ pub_subnet_name_02 }}' }
+      - { az: '{{ az_01 }}', cidr: '{{ priv_cidr_01 }}', name: '{{ priv_subnet_name_01 }}' }
+      - { az: '{{ az_02 }}', cidr: '{{ priv_cidr_02 }}', name: '{{ priv_subnet_name_02 }}' }
+    tags:
+      - subnets
+      - first
+
+  - name: Gather facts about the subnets
+    amazon.aws.ec2_vpc_subnet_info:
+      region: '{{ aws_region }}'
+      filters:
+        "tag:Name":
+          - '{{ pub_subnet_name_01 }}'
+          - '{{ pub_subnet_name_02 }}'
+          - '{{ priv_subnet_name_01 }}'
+          - '{{ priv_subnet_name_02 }}'
+    register: subnets_info
+    tags: first
+
+  - name: Get the subnet ids
+    set_fact:
+      priv_01_subnet_id: "{{ subnets_info|community.general.json_query(priv_01)|join(\"\") }}"
+      priv_02_subnet_id: "{{ subnets_info|community.general.json_query(priv_02)|join(\"\") }}"
+      pub_01_subnet_id: "{{ subnets_info|community.general.json_query(pub_01)|join(\"\") }}"
+      pub_02_subnet_id: "{{ subnets_info|community.general.json_query(pub_02)|join(\"\") }}"
+    vars:
+      priv_01: "subnets[?tags.Name == '{{ priv_subnet_name_01 }}'].id"
+      priv_02: "subnets[?tags.Name == '{{ priv_subnet_name_02 }}'].id"
+      pub_01: "subnets[?tags.Name == '{{ pub_subnet_name_01 }}'].id"
+      pub_02: "subnets[?tags.Name == '{{ pub_subnet_name_02 }}'].id"
+    tags: first
+  
+  - name: confirm subnets
+    debug:
+      msg: " private subnets are {{ priv_01_subnet_id }} and {{ priv_02_subnet_id }}, whille public subnets are {{ pub_01_subnet_id }} and {{ pub_02_subnet_id }}"
+
